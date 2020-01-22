@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.telephony.SmsManager;
 import android.util.Log;
 import android.view.View;
@@ -30,6 +31,10 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,8 +79,53 @@ public class MainActivity extends AppCompatActivity implements MessageListener {
 
         //Register sms listener
         MessageReceiver.bindListener(this);
+
+
+
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //BELOW CODE IS TO SEND DATA FROM SERVER TO ANDROID
+        Thread myThread=new Thread(new MyServerThread());
+        myThread.start();
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //BELOW CODE IS TO SEND DATA FROM SERVER TO ANDROID
+    class MyServerThread implements Runnable{
+
+        Socket s;
+        ServerSocket ss;
+        InputStreamReader isr;
+        BufferedReader bufferedReader;
+        Handler h =new Handler();
+        String message;
+
+        @Override
+        public void run() {
+            try {
+                ss=new ServerSocket(7881);
+                while(true){
+                    s=ss.accept();
+                    isr=new InputStreamReader(s.getInputStream());
+                    bufferedReader=new BufferedReader(isr);
+                    message=bufferedReader.readLine();
+
+                    h.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void messageReceived(final String phone, String msgBody, String time, final String message) {
